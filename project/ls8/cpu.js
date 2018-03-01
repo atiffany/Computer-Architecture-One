@@ -19,9 +19,9 @@ const CMP  = 0b10100000;
 const SP = 7; //according to Google Stack Pointer needs to point to Reg7
 
 // values for flags 00000LGE
-const FL_EQUALS  = 0b00000001;
-const FL_GREATER = 0b00000010;
 const FL_LESS    = 0b00000100;
+const FL_GREATER = 0b00000010;
+const FL_EQUALS  = 0b00000001;
 
 /**
  * Class for simulating a simple Computer (CPU & memory)
@@ -36,10 +36,10 @@ class CPU {
         this.reg = new Array(8).fill(0); // General-purpose registers
         
         // Special-purpose registers
-        this.reg.PC = 0; // Program Counter
-        this.reg.IR = 0; // Instruction Register
+        this.reg.PC   = 0; // Program Counter
+        this.reg.IR   = 0; // Instruction Register
         this.reg.flag = 0; // Flags
-        this.reg[SP] = 0xF4;
+        this.reg[SP]  = 0xF4;
 
 		this.setupBranchTable();
     }
@@ -50,15 +50,15 @@ class CPU {
 	setupBranchTable() {
 		let bt = {};
 
-        bt[HLT]  = this.HLT;
         bt[ADD]  = this.ADD;
+        bt[CMP]  = this.CMP;
+        bt[HLT]  = this.HLT;
         bt[LDI]  = this.LDI;
         bt[MUL]  = this.MUL;
-        bt[PRN]  = this.PRN;
         bt[NOP]  = this.NOP;
-        bt[PUSH] = this.PUSH;
         bt[POP]  = this.POP;
-        bt[CMP]  = this.CMP;
+        bt[PRN]  = this.PRN;
+        bt[PUSH] = this.PUSH;
 
 		this.branchTable = bt;
 	}
@@ -91,11 +91,11 @@ class CPU {
     setFlag(flag, value) {
         if (value) {
             // set flag to 1 because of the OR
-            this.reg.FL = this.reg.FL | flag;
+            this.reg.flag = this.reg.flag | flag;
 
         } else {
             //set flag to 0
-            this.reg.FL = this.reg.FL & ~flag;
+            this.reg.flag = this.reg.flag & ~flag;
         }
     }
     /**
@@ -109,7 +109,7 @@ class CPU {
                 this.reg[regA] = this.reg[regA] + this.reg[regB];
                break;
             case 'CMP':
-                return this.setFlag(FL_EQUALS, this.reg[regA] === this.reg[regB]);
+                this.setFlag(FL_EQUALS, this.reg[regA] === this.reg[regB]);
                 break;
             case 'MUL':
                 this.reg[regA] = this.reg[regA] * this.reg[regB];
@@ -125,6 +125,7 @@ class CPU {
         this.reg.IR = this.ram.read(this.reg.PC);
 
         // Debugging output
+        // this is being outputted but nothing else is
         console.log(`${this.reg.PC}: ${this.reg.IR.toString(2)}`);
         
         // Based on the value in the Instruction Register, locate the
@@ -138,8 +139,6 @@ class CPU {
             console.log('Unknown opcode ' + this.reg.IR);
             this.stopClock();
             return;
-        } else {
-            this.HLT();
         }
 
 
@@ -160,7 +159,7 @@ class CPU {
     }
     CMP(regA, regB) {
         this.alu('CMP', regA, regB);
-        console.log(this.reg.FL.toString(2));
+        console.log("The flag is: " + this.reg.flag.toString(2));
     }
     HLT() {
         this.stopClock();
