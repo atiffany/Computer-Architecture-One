@@ -6,15 +6,17 @@ const fs = require('fs');
 
 // Instructions
 
-const HLT  = 0b00000001; // Halt CPU
 const ADD  = 0b10101000;
+const CALL = 0b01001000;
+const CMP  = 0b10100000;
+const HLT  = 0b00000001; // Halt CPU
 const LDI  = 0b10011001; 
 const MUL  = 0b10101010;
-const PRN  = 0b01000011;
 const NOP  = 0b00000000;
-const PUSH = 0b01001101;
 const POP  = 0b01001100;
-const CMP  = 0b10100000;
+const PRN  = 0b01000011;
+const PUSH = 0b01001101;
+const RET  = 0b00001001;
 
 const SP = 7; //according to Google Stack Pointer needs to point to Reg7
 
@@ -51,6 +53,7 @@ class CPU {
 		let bt = {};
 
         bt[ADD]  = this.ADD;
+        bt[CALL] = this.CALL;
         bt[CMP]  = this.CMP;
         bt[HLT]  = this.HLT;
         bt[LDI]  = this.LDI;
@@ -59,6 +62,7 @@ class CPU {
         bt[POP]  = this.POP;
         bt[PRN]  = this.PRN;
         bt[PUSH] = this.PUSH;
+        bt[RET]  = this.RET;
 
 		this.branchTable = bt;
 	}
@@ -147,6 +151,13 @@ class CPU {
         // We need to use call() so we can set the "this" value inside
         // the handler (otherwise it will be undefined in the handler)
         handler.call(this, operandA, operandB);
+        const next = handler(operandA, operandB);
+
+        if (next === undefined) {
+            // go on to next item
+        } else {
+            // go to the specifically defined item given by handler
+        }
 
         // Increment the PC register to go to the next instruction
         this.reg.PC += ((this.reg.IR >> 6) & 0b00000011) +1;
@@ -154,26 +165,35 @@ class CPU {
     }
 
     // INSTRUCTION HANDLER CODE:
-    ADD(regA, regB) {
+    ADD (regA, regB) {
         this.alu('ADD', regA, regB);
     }
-    CMP(regA, regB) {
+    CALL (registerNumber) {
+        // push the next PC directions onto the stack +2 will avoid the location and value
+        // set a variable of the address we want to navigate to
+        // return the address
+        this.pushHelper(this.reg.PC + 2);
+        const address = this.reg[registerNumber];
+        return address;
+
+    }
+    CMP (regA, regB) {
         this.alu('CMP', regA, regB);
         console.log("The flag is: " + this.reg.flag.toString(2));
     }
-    HLT() {
+    HLT () {
         this.stopClock();
     }
-    LDI(registerNumber, value) {
+    LDI (registerNumber, value) {
         this.reg[registerNumber] = value & 255; //anding with 255 limits the size to no more than 255
     }
-    MUL(regA, regB) {
+    MUL (regA, regB) {
         this.alu('MUL', regA, regB);
     }
     NOP () {
         return; //NOP does nothing
     }
-    popHelper() {
+    popHelper () {
         const popped = this.ram.read(this.reg[SP]);
         this.reg[SP]++;
         return popped;
@@ -181,16 +201,17 @@ class CPU {
     POP (registerNumber) {
         this.reg[registerNumber] = this.popHelper();
     }
-    PRN(regA) {
+    PRN (regA) {
         console.log(this.reg[regA]);
     }
-    pushHelper(value) {
+    pushHelper (value) {
         this.reg[SP]--;
         this.ram.write(this.reg[SP], value);
     }
     PUSH (registerNumber) {
         this.pushHelper(this.reg[registerNumber]);
     }
+    RET () {}
 }
 
 module.exports = CPU;
