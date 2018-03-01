@@ -50,15 +50,15 @@ class CPU {
 	setupBranchTable() {
 		let bt = {};
 
-        bt[HLT] = this.HLT;
-        bt[ADD] = this.ADD;
-        bt[LDI] = this.LDI;
-        bt[MUL] = this.MUL;
-        bt[PRN] = this.PRN;
-        bt[NOP] = this.NOP;
+        bt[HLT]  = this.HLT;
+        bt[ADD]  = this.ADD;
+        bt[LDI]  = this.LDI;
+        bt[MUL]  = this.MUL;
+        bt[PRN]  = this.PRN;
+        bt[NOP]  = this.NOP;
         bt[PUSH] = this.PUSH;
-        bt[POP] = this.POP;
-        bt[CMP] = this.CMP;
+        bt[POP]  = this.POP;
+        bt[CMP]  = this.CMP;
 
 		this.branchTable = bt;
 	}
@@ -105,14 +105,14 @@ class CPU {
      */
     alu(op, regA, regB) {
         switch (op) {
-            case 'MUL':
-                this.reg[regA] = this.reg[regA] * this.reg[regB];
-                break;
             case 'ADD':
                 this.reg[regA] = this.reg[regA] + this.reg[regB];
                break;
             case 'CMP':
-                this.reg.FL = setFlag(FL_EQUALS, this.reg[regA] === this.reg[regB]);
+                return this.setFlag(FL_EQUALS, this.reg[regA] === this.reg[regB]);
+                break;
+            case 'MUL':
+                this.reg[regA] = this.reg[regA] * this.reg[regB];
                 break;
         }
     }
@@ -139,7 +139,7 @@ class CPU {
             this.stopClock();
             return;
         } else {
-            HLT();
+            this.HLT();
         }
 
 
@@ -158,6 +158,10 @@ class CPU {
     ADD(regA, regB) {
         this.alu('ADD', regA, regB);
     }
+    CMP(regA, regB) {
+        this.alu('CMP', regA, regB);
+        console.log(this.reg.FL.toString(2));
+    }
     HLT() {
         this.stopClock();
     }
@@ -167,29 +171,26 @@ class CPU {
     MUL(regA, regB) {
         this.alu('MUL', regA, regB);
     }
-    PRN(regA) {
-        console.log(this.reg[regA]);
-    }
     NOP () {
         return; //NOP does nothing
-    }
-    pushHelper(value) {
-        this.reg[SP]--;
-        this.ram.write(this.reg[SP], value);
     }
     popHelper() {
         const popped = this.ram.read(this.reg[SP]);
         this.reg[SP]++;
         return popped;
     }
-    PUSH (registerNumber) {
-        this.pushHelper(this.reg[registerNumber]);
-    }
     POP (registerNumber) {
         this.reg[registerNumber] = this.popHelper();
     }
-    CMP(regA, regB) {
-        this.alu('CMP', regA, regB);
+    PRN(regA) {
+        console.log(this.reg[regA]);
+    }
+    pushHelper(value) {
+        this.reg[SP]--;
+        this.ram.write(this.reg[SP], value);
+    }
+    PUSH (registerNumber) {
+        this.pushHelper(this.reg[registerNumber]);
     }
 }
 

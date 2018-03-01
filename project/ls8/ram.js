@@ -3,6 +3,7 @@
  */
 class RAM {
     constructor(size) {
+        this.size = size;
         this.mem = new Array(size);
         this.mem.fill(0);
     }
@@ -14,7 +15,7 @@ class RAM {
         // memory data register(what) and memory address register (where)
         // !!! IMPLEMENT ME
         // write the value in the MDR to the address MAR
-        this.mem[MAR & (size -1)] = MDR;
+        this.mem[MAR & (this.size -1)] = MDR;
     }
 
     /**
@@ -25,7 +26,7 @@ class RAM {
     read(MAR) {
         // !!! IMPLEMENT ME
         // Read the value in address MAR and return it
-        return this.mem[MAR & (size -1)];
+        return this.mem[MAR & (this.size -1)];
     }
 }
 
