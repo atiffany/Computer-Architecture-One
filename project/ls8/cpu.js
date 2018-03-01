@@ -6,18 +6,27 @@ const fs = require('fs');
 
 // Instructions
 
-const HLT = 0b00000001; // Halt CPU
-const ADD = 0b10101000;
-const LDI = 0b10011001; 
-const MUL = 0b10101010;
-const PRN = 0b01000011;
-// PRN
+const HLT  = 0b00000001; // Halt CPU
+const ADD  = 0b10101000;
+const LDI  = 0b10011001; 
+const MUL  = 0b10101010;
+const PRN  = 0b01000011;
+const NOP  = 0b00000000;
+const PUSH = 0b01001101;
+const POP  = 0b01001100;
+const CMP  = 0b10100000;
+
+const SP = 7; //according to Google Stack Pointer needs to point to Reg7
+
+// values for flags 00000LGE
+const FL_EQUALS  = 0b00000001;
+const FL_GREATER = 0b00000010;
+const FL_LESS    = 0b00000100;
 
 /**
  * Class for simulating a simple Computer (CPU & memory)
  */
 class CPU {
-
     /**
      * Initialize the CPU
      */
@@ -29,6 +38,8 @@ class CPU {
         // Special-purpose registers
         this.reg.PC = 0; // Program Counter
         this.reg.IR = 0; // Instruction Register
+        this.reg.flag = 0; // Flags
+        this.reg[SP] = 0xF4;
 
 		this.setupBranchTable();
     }
@@ -44,6 +55,10 @@ class CPU {
         bt[LDI] = this.LDI;
         bt[MUL] = this.MUL;
         bt[PRN] = this.PRN;
+        bt[NOP] = this.NOP;
+        bt[PUSH] = this.PUSH;
+        bt[POP] = this.POP;
+        bt[CMP] = this.CMP;
 
 		this.branchTable = bt;
 	}
@@ -73,6 +88,16 @@ class CPU {
         clearInterval(this.clock);
     }
 
+    setFlag(flag, value) {
+        if (value) {
+            // set flag to 1 because of the OR
+            this.reg.FL = this.reg.FL | flag;
+
+        } else {
+            //set flag to 0
+            this.reg.FL = this.reg.FL & ~flag;
+        }
+    }
     /**
      * ALU functionality
      * 
@@ -84,8 +109,11 @@ class CPU {
                 this.reg[regA] = this.reg[regA] * this.reg[regB];
                 break;
             case 'ADD':
-                this.reg[regA] = this.reg[regA] + this.reg[regB]
+                this.reg[regA] = this.reg[regA] + this.reg[regB];
                break;
+            case 'CMP':
+                this.reg.FL = setFlag(FL_EQUALS, this.reg[regA] === this.reg[regB]);
+                break;
         }
     }
 
@@ -110,6 +138,8 @@ class CPU {
             console.log('Unknown opcode ' + this.reg.IR);
             this.stopClock();
             return;
+        } else {
+            HLT();
         }
 
 
@@ -139,6 +169,27 @@ class CPU {
     }
     PRN(regA) {
         console.log(this.reg[regA]);
+    }
+    NOP () {
+        return; //NOP does nothing
+    }
+    pushHelper(value) {
+        this.reg[SP]--;
+        this.ram.write(this.reg[SP], value);
+    }
+    popHelper() {
+        const popped = this.ram.read(this.reg[SP]);
+        this.reg[SP]++;
+        return popped;
+    }
+    PUSH (registerNumber) {
+        this.pushHelper(this.reg[registerNumber]);
+    }
+    POP (registerNumber) {
+        this.reg[registerNumber] = this.popHelper();
+    }
+    CMP(regA, regB) {
+        this.alu('CMP', regA, regB);
     }
 }
 

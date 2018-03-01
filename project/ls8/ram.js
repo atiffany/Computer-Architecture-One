@@ -14,7 +14,7 @@ class RAM {
         // memory data register(what) and memory address register (where)
         // !!! IMPLEMENT ME
         // write the value in the MDR to the address MAR
-        this.mem[MAR] = MDR;
+        this.mem[MAR & (size -1)] = MDR;
     }
 
     /**
@@ -25,7 +25,7 @@ class RAM {
     read(MAR) {
         // !!! IMPLEMENT ME
         // Read the value in address MAR and return it
-        return this.mem[MAR];
+        return this.mem[MAR & (size -1)];
     }
 }
 
