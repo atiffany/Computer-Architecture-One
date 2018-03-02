@@ -4,12 +4,13 @@
 
 const fs = require('fs');
 
-// Instructions
-
 const ADD  = 0b10101000;
 const CALL = 0b01001000;
 const CMP  = 0b10100000;
-const HLT  = 0b00000001; // Halt CPU
+const HLT  = 0b00000001;
+const JEQ  = 0b01010001;
+const JMP  = 0b01010000;
+const JNE  = 0b01010010;
 const LDI  = 0b10011001; 
 const MUL  = 0b10101010;
 const NOP  = 0b00000000;
@@ -17,9 +18,7 @@ const POP  = 0b01001100;
 const PRN  = 0b01000011;
 const PUSH = 0b01001101;
 const RET  = 0b00001001;
-
 const SP = 7; //according to Google Stack Pointer needs to point to Reg7
-
 // values for flags 00000LGE
 const FL_LESS    = 0b00000100;
 const FL_GREATER = 0b00000010;
@@ -56,6 +55,9 @@ class CPU {
         bt[CALL] = this.CALL;
         bt[CMP]  = this.CMP;
         bt[HLT]  = this.HLT;
+        bt[JEQ]  = this.JEQ;
+        bt[JMP]  = this.JMP;
+        bt[JNE]  = this.JNE;
         bt[LDI]  = this.LDI;
         bt[MUL]  = this.MUL;
         bt[NOP]  = this.NOP;
@@ -102,6 +104,9 @@ class CPU {
             this.reg.flag = this.reg.flag & ~flag;
         }
     }
+    getFlag(flag) {
+        return this.reg.flag & flag;
+    }
     /**
      * ALU functionality
      * 
@@ -145,23 +150,18 @@ class CPU {
             return;
         }
 
-
         let operandA = this.ram.read(this.reg.PC + 1);
         let operandB = this.ram.read(this.reg.PC + 2);
         // We need to use call() so we can set the "this" value inside
         // the handler (otherwise it will be undefined in the handler)
-        handler.call(this, operandA, operandB);
-        const next = handler(operandA, operandB);
-
+        const next = handler.call(this, operandA, operandB);
         if (next === undefined) {
             // go on to next item
+            this.reg.PC += ((this.reg.IR >> 6) & 0b00000011) +1; //will go to next instructions
         } else {
             // go to the specifically defined item given by handler
+            this.reg.PC = next;
         }
-
-        // Increment the PC register to go to the next instruction
-        this.reg.PC += ((this.reg.IR >> 6) & 0b00000011) +1;
-
     }
 
     // INSTRUCTION HANDLER CODE:
@@ -183,6 +183,15 @@ class CPU {
     }
     HLT () {
         this.stopClock();
+    }
+    JEQ (registerNumber) {
+        return this.getFlag(FL_EQUALS) ? this.reg[registerNumber] : undefined;
+    }
+    JMP (registerNumber) {
+        return this.reg[registerNumber];
+    }
+    JNE (registerNumber) {
+        return !(this.getFlag(FL_EQUALS)) ? this.reg[registerNumber] : undefined;
     }
     LDI (registerNumber, value) {
         this.reg[registerNumber] = value & 255; //anding with 255 limits the size to no more than 255
